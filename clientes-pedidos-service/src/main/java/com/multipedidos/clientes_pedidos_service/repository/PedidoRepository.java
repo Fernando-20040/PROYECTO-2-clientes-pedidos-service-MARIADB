@@ -1,5 +1,7 @@
 package com.multipedidos.clientes_pedidos_service.repository;
 
-public class PedidoRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+import com.multipedidos.clientes_pedidos_service.entity.Pedido;
 
+public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 }
