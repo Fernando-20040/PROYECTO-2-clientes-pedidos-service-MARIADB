@@ -1,10 +1,9 @@
 package com.multipedidos.clientes_pedidos_service.service;
 
-import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Optional;
 import com.multipedidos.clientes_pedidos_service.entity.Cliente;
 import com.multipedidos.clientes_pedidos_service.repository.ClienteRepository;
+import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 public class ClienteService {
@@ -19,15 +18,7 @@ public class ClienteService {
         return clienteRepository.findAll();
     }
 
-    public Optional<Cliente> obtenerCliente(Long id) {
-        return clienteRepository.findById(id);
-    }
-
     public Cliente guardarCliente(Cliente cliente) {
         return clienteRepository.save(cliente);
-    }
-
-    public void eliminarCliente(Long id) {
-        clienteRepository.deleteById(id);
     }
 }

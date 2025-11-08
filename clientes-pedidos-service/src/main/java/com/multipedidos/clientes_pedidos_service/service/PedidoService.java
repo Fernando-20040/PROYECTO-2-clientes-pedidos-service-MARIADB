@@ -1,50 +1,64 @@
 package com.multipedidos.clientes_pedidos_service.service;
 
-import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Optional;
-import com.multipedidos.clientes_pedidos_service.entity.Pedido;
-import com.multipedidos.clientes_pedidos_service.repository.PedidoRepository;
-import com.multipedidos.clientes_pedidos_service.repository.ClienteRepository;
+import com.multipedidos.clientes_pedidos_service.dto.*;
+import com.multipedidos.clientes_pedidos_service.entity.*;
+import com.multipedidos.clientes_pedidos_service.repository.*;
 import com.multipedidos.common.OperacionesNegocio;
+import org.springframework.stereotype.Service;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
+    private final ProductoRepository productoRepository;
     private final ClienteRepository clienteRepository;
 
-    public PedidoService(PedidoRepository pedidoRepository, ClienteRepository clienteRepository) {
+    public PedidoService(PedidoRepository pedidoRepository, ProductoRepository productoRepository, ClienteRepository clienteRepository) {
         this.pedidoRepository = pedidoRepository;
+        this.productoRepository = productoRepository;
         this.clienteRepository = clienteRepository;
     }
 
     public List<Pedido> listarPedidos() {
         return pedidoRepository.findAll();
     }
-
-    public Optional<Pedido> obtenerPedido(Long id) {
-        return pedidoRepository.findById(id);
+    
+    public List<Pedido> listarPedidosPorCliente(Long clienteId) {
+        return pedidoRepository.findByClienteId(clienteId);
     }
 
-    public Pedido guardarPedido(Pedido pedido) {
-        // ✅ Validar cliente existente
-        if (pedido.getClienteId() == null || !clienteRepository.existsById(pedido.getClienteId())) {
-            throw new IllegalArgumentException("El cliente con ID " + pedido.getClienteId() + " no existe");
+    public Pedido guardarPedido(PedidoDTO pedidoDTO) {
+        if (pedidoDTO.getClienteId() == null || !clienteRepository.existsById(pedidoDTO.getClienteId())) {
+            throw new IllegalArgumentException("El cliente con ID " + pedidoDTO.getClienteId() + " no existe");
         }
 
-        // ✅ Evitar null en lista de productos
-        double subtotal = (pedido.getProductos() != null)
-                ? pedido.getProductos().stream().mapToDouble(p -> p.getPrecio()).sum()
-                : 0.0;
+        Pedido pedido = new Pedido();
+        pedido.setClienteId(pedidoDTO.getClienteId());
 
+        // Guardamos los productos uno por uno y los asociamos
+        List<Producto> productos = pedidoDTO.getProductos().stream()
+                .map(dto -> {
+                    Producto p = new Producto();
+                    p.setNombre(dto.getNombre());
+                    p.setPrecio(dto.getPrecio());
+                    return productoRepository.save(p); // 🔹 ahora sí se guardan en BD
+                })
+                .collect(Collectors.toList());
+
+        pedido.setProductos(productos);
+
+        // Calcular el subtotal sumando precios
+        double subtotal = productos.stream().mapToDouble(Producto::getPrecio).sum();
         double totalConIVA = OperacionesNegocio.calcularTotalConIVA(subtotal);
         pedido.setTotal(totalConIVA);
 
         return pedidoRepository.save(pedido);
+        
+        
     }
-
-    public void eliminarPedido(Long id) {
-        pedidoRepository.deleteById(id);
-    }
+    
+  
+    
 }
