@@ -28,7 +28,7 @@ public class PedidoController {
         Pedido nuevo = pedidoService.guardarPedido(pedidoDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
     }
-    
+
     @GetMapping("/cliente/{clienteId}")
     public ResponseEntity<List<Pedido>> listarPedidosPorCliente(@PathVariable Long clienteId) {
         List<Pedido> pedidos = pedidoService.listarPedidosPorCliente(clienteId);
@@ -38,5 +38,27 @@ public class PedidoController {
         return ResponseEntity.ok(pedidos);
     }
 
+    // 🔹 Actualizar pedido (solo si está pendiente)
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizarPedido(@PathVariable Long id, @RequestBody PedidoDTO pedidoDTO) {
+        try {
+            Pedido actualizado = pedidoService.actualizarPedido(id, pedidoDTO);
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
+    // 🔹 Cambiar estado (por ejemplo, al facturar)
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @RequestParam String estado) {
+        try {
+            Pedido actualizado = pedidoService.cambiarEstado(id, estado);
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
