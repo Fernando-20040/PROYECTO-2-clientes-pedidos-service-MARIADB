@@ -1,0 +1,655 @@
+openapi: 3.0.1
+info:
+  title: Componente A - API de Clientes y Pedidos
+  version: 1.0.0
+  description: |
+    API REST para la gestión de clientes y pedidos del sistema de logística Multipedidos.
+    Expone operaciones CRUD para clientes y operaciones de registro y consulta de pedidos.
+  contact:
+    name: Equipo Multipedidos
+    email: soporte@multipedidos.local
+servers:
+  - url: http://localhost:8080
+    description: Servidor local de desarrollo - Componente A
+
+tags:
+  - name: Clientes
+    description: Operaciones relacionadas con la gestión de clientes.
+  - name: Pedidos
+    description: Operaciones relacionadas con la gestión de pedidos y su estado.
+
+paths:
+  /clientes:
+    get:
+      tags: [Clientes]
+      summary: Listar clientes
+      description: Obtiene la lista completa de clientes registrados.
+      responses:
+        '200':
+          description: Lista de clientes encontrada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+              examples:
+                ejemplo:
+                  value:
+                    - id: 1
+                      nombre: "Juan Pérez"
+                      correo: "juan.perez@example.com"
+                      telefono: "5551234567"
+                      direccion: "Av. Siempre Viva 123"
+                    - id: 2
+                      nombre: "Ana Gómez"
+                      correo: "ana.gomez@example.com"
+                      telefono: "5559876543"
+                      direccion: "Calle Principal 456"
+        '204':
+          description: No hay clientes registrados.
+        '500':
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Clientes]
+      summary: Crear cliente
+      description: Registra un nuevo cliente en el sistema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cliente'
+            examples:
+              ejemplo:
+                value:
+                  nombre: "Carlos López"
+                  correo: "carlos.lopez@example.com"
+                  telefono: "5551230000"
+                  direccion: "Col. Centro #100"
+      responses:
+        '201':
+          description: Cliente creado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          description: Datos de cliente inválidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Ya existe un cliente con el mismo correo electrónico.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al crear el cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /clientes/{id}:
+    get:
+      tags: [Clientes]
+      summary: Obtener cliente por ID
+      description: Devuelve la información de un cliente específico.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador único del cliente.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Cliente encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '404':
+          description: Cliente no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al obtener el cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Clientes]
+      summary: Actualizar cliente
+      description: Actualiza los datos de un cliente existente.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador único del cliente a actualizar.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cliente'
+      responses:
+        '200':
+          description: Cliente actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          description: Datos de cliente inválidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Cliente no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al actualizar el cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Clientes]
+      summary: Eliminar cliente
+      description: Elimina un cliente identificado por su ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador único del cliente a eliminar.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Cliente eliminado correctamente.
+        '404':
+          description: Cliente no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: No se puede eliminar el cliente porque tiene pedidos asociados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al eliminar el cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /pedidos:
+    get:
+      tags: [Pedidos]
+      summary: Listar pedidos
+      description: Obtiene la lista completa de pedidos registrados.
+      responses:
+        '200':
+          description: Lista de pedidos encontrada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+        '204':
+          description: No hay pedidos registrados.
+        '500':
+          description: Error interno al listar pedidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Pedidos]
+      summary: Crear pedido
+      description: Crea un nuevo pedido para un cliente, incluyendo productos y totales calculados.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoDTO'
+            examples:
+              ejemplo:
+                value:
+                  clienteId: 1
+                  nombre: "Pedido #001"
+                  productos:
+                    - nombre: "Laptop"
+                      precio: 15000.0
+                      cantidad: 1
+                    - nombre: "Mouse"
+                      precio: 300.0
+                      cantidad: 2
+                  subtotal: 15600.0
+                  iva: 2496.0
+                  descuentoPorcentaje: 10.0
+                  descuento: 1809.6
+                  total: 163,286.4
+                  estado: "PENDIENTE"
+      responses:
+        '201':
+          description: Pedido creado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '400':
+          description: Datos del pedido inválidos o cliente no válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al crear el pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /pedidos/{id}:
+    get:
+      tags: [Pedidos]
+      summary: Obtener pedido por ID
+      description: Devuelve el detalle de un pedido específico.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador único del pedido.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Pedido encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '404':
+          description: Pedido no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al obtener el pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Pedidos]
+      summary: Eliminar pedido
+      description: Elimina un pedido si su estado lo permite.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador único del pedido a eliminar.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Pedido eliminado correctamente.
+        '404':
+          description: Pedido no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: No se puede eliminar el pedido (por ejemplo, ya está facturado).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al eliminar el pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /pedidos/{id}/estado:
+    put:
+      tags: [Pedidos]
+      summary: Cambiar estado del pedido
+      description: Actualiza el estado de un pedido (PENDIENTE, FACTURADO, ANULADO).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del pedido a actualizar.
+          schema:
+            type: integer
+            format: int64
+        - name: estado
+          in: query
+          required: true
+          description: Nuevo estado del pedido (PENDIENTE, FACTURADO, ANULADO).
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estado actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '400':
+          description: Estado inválido o cambio de estado no permitido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Pedido no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al cambiar el estado del pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /pedidos/cliente/{clienteId}:
+    get:
+      tags: [Pedidos]
+      summary: Listar pedidos por cliente
+      description: Devuelve todos los pedidos asociados a un cliente específico.
+      parameters:
+        - name: clienteId
+          in: path
+          required: true
+          description: ID del cliente.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Lista de pedidos del cliente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+        '204':
+          description: El cliente no tiene pedidos registrados.
+        '404':
+          description: Cliente no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al listar pedidos por cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /pedidos/cliente/{clienteId}/pendientes:
+    get:
+      tags: [Pedidos]
+      summary: Listar pedidos pendientes por cliente
+      description: Devuelve únicamente los pedidos con estado PENDIENTE para un cliente dado.
+      parameters:
+        - name: clienteId
+          in: path
+          required: true
+          description: ID del cliente.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Lista de pedidos pendientes del cliente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+        '204':
+          description: El cliente no tiene pedidos pendientes.
+        '404':
+          description: Cliente no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno al listar pedidos pendientes por cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Cliente:
+      type: object
+      description: Representa un cliente que realiza pedidos.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador único del cliente.
+          example: 1
+        nombre:
+          type: string
+          description: Nombre completo del cliente.
+          example: "Juan Pérez"
+        correo:
+          type: string
+          description: Correo electrónico del cliente.
+          example: "juan.perez@example.com"
+        telefono:
+          type: string
+          description: Número de teléfono del cliente.
+          example: "5551234567"
+        direccion:
+          type: string
+          description: Dirección física del cliente.
+          example: "Av. Siempre Viva 123, Ciudad, País"
+    ProductoDTO:
+      type: object
+      description: Información de un producto recibido en la creación de pedidos.
+      properties:
+        nombre:
+          type: string
+          description: Nombre del producto.
+          example: "Laptop"
+        precio:
+          type: number
+          format: double
+          description: Precio unitario del producto.
+          example: 15000.0
+        cantidad:
+          type: integer
+          format: int32
+          description: Cantidad solicitada del producto.
+          example: 2
+    PedidoDTO:
+      type: object
+      description: DTO de entrada para crear pedidos.
+      properties:
+        clienteId:
+          type: integer
+          format: int64
+          description: ID del cliente que realiza el pedido.
+          example: 1
+        nombre:
+          type: string
+          description: Nombre o descripción del pedido.
+          example: "Pedido para oficina"
+        productos:
+          type: array
+          description: Lista de productos incluidos en el pedido.
+          items:
+            $ref: '#/components/schemas/ProductoDTO'
+        subtotal:
+          type: number
+          format: double
+          description: Importe subtotal del pedido antes de impuestos y descuentos.
+          example: 15000.0
+        iva:
+          type: number
+          format: double
+          description: Importe del IVA aplicado al pedido.
+          example: 2400.0
+        descuentoPorcentaje:
+          type: number
+          format: double
+          description: Porcentaje de descuento aplicado al pedido.
+          example: 10.0
+        descuento:
+          type: number
+          format: double
+          description: Importe del descuento aplicado.
+          example: 1500.0
+        total:
+          type: number
+          format: double
+          description: Importe total del pedido después de impuestos y descuentos.
+          example: 15900.0
+        estado:
+          type: string
+          description: Estado inicial del pedido.
+          example: "PENDIENTE"
+    Producto:
+      type: object
+      description: Información de un producto asociado a un pedido.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador único del producto.
+          example: 10
+        nombre:
+          type: string
+          description: Nombre del producto.
+          example: "Mouse inalámbrico"
+        precio:
+          type: number
+          format: double
+          description: Precio unitario del producto.
+          example: 300.0
+        cantidad:
+          type: integer
+          format: int32
+          description: Cantidad incluida en el pedido.
+          example: 2
+    Pedido:
+      type: object
+      description: Representa un pedido registrado en el sistema.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador único del pedido.
+          example: 100
+        clienteId:
+          type: integer
+          format: int64
+          description: ID del cliente asociado al pedido.
+          example: 1
+        nombre:
+          type: string
+          description: Nombre o descripción del pedido.
+          example: "Pedido #100"
+        subtotal:
+          type: number
+          format: double
+          description: Importe subtotal del pedido.
+          example: 15000.0
+        iva:
+          type: number
+          format: double
+          description: Importe del IVA aplicado.
+          example: 2400.0
+        descuentoPorcentaje:
+          type: number
+          format: double
+          description: Porcentaje de descuento aplicado.
+          example: 10.0
+        descuento:
+          type: number
+          format: double
+          description: Importe del descuento aplicado.
+          example: 1500.0
+        total:
+          type: number
+          format: double
+          description: Importe total a pagar.
+          example: 15900.0
+        productos:
+          type: array
+          description: Lista de productos asociados al pedido.
+          items:
+            $ref: '#/components/schemas/Producto'
+        estado:
+          type: string
+          description: Estado actual del pedido (PENDIENTE, FACTURADO, ANULADO).
+          example: "PENDIENTE"
+    ErrorResponse:
+      type: object
+      description: Estructura genérica para respuestas de error.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Fecha y hora del error.
+          example: "2025-11-13T22:15:00Z"
+        status:
+          type: integer
+          description: Código de estado HTTP.
+          example: 400
+        error:
+          type: string
+          description: Descripción corta del error.
+          example: "Bad Request"
+        message:
+          type: string
+          description: Mensaje detallado del error.
+          example: "Los datos enviados no son válidos."
+        path:
+          type: string
+          description: Ruta del endpoint donde ocurrió el error.
+          example: "/pedidos"

@@ -3,8 +3,10 @@ package com.multipedidos.clientes_pedidos_service.controller;
 import com.multipedidos.clientes_pedidos_service.dto.PedidoDTO;
 import com.multipedidos.clientes_pedidos_service.entity.Pedido;
 import com.multipedidos.clientes_pedidos_service.service.PedidoService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.*;
+
 import java.util.List;
 
 @RestController
@@ -18,40 +20,50 @@ public class PedidoController {
         this.pedidoService = pedidoService;
     }
 
+    /* ========= GET ========= */
+
     @GetMapping
     public List<Pedido> listarPedidos() {
         return pedidoService.listarPedidos();
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Pedido> crearPedido(@RequestBody PedidoDTO pedidoDTO) {
-        Pedido nuevo = pedidoService.guardarPedido(pedidoDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
+    @GetMapping("/{id}")
+    public ResponseEntity<Pedido> obtenerPedidoPorId(@PathVariable Long id) {
+        try {
+            Pedido pedido = pedidoService.obtenerPedidoPorId(id);
+            return ResponseEntity.ok(pedido);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
     @GetMapping("/cliente/{clienteId}")
     public ResponseEntity<List<Pedido>> listarPedidosPorCliente(@PathVariable Long clienteId) {
         List<Pedido> pedidos = pedidoService.listarPedidosPorCliente(clienteId);
-        if (pedidos.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok(pedidos);
+        return pedidos.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(pedidos);
     }
 
-    // 🔹 Actualizar pedido (solo si está pendiente)
-    @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarPedido(@PathVariable Long id, @RequestBody PedidoDTO pedidoDTO) {
-        try {
-            Pedido actualizado = pedidoService.actualizarPedido(id, pedidoDTO);
-            return ResponseEntity.ok(actualizado);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    // 🆕 Solo pedidos pendientes por cliente (para facturas)
+    @GetMapping("/cliente/{clienteId}/pendientes")
+    public ResponseEntity<List<Pedido>> listarPedidosPendientesPorCliente(@PathVariable Long clienteId) {
+        List<Pedido> pedidos = pedidoService.listarPedidosPendientesPorCliente(clienteId);
+        return pedidos.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(pedidos);
     }
 
-    // 🔹 Cambiar estado (por ejemplo, al facturar)
+    /* ========= POST ========= */
+
+    @PostMapping(consumes = "application/json")
+    public ResponseEntity<Pedido> crearPedido(@RequestBody PedidoDTO pedidoDTO) {
+        Pedido nuevo = pedidoService.guardarPedido(pedidoDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
+    }
+
+    /* ========= PUT ========= */
+
     @PutMapping("/{id}/estado")
     public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @RequestParam String estado) {
         try {
@@ -59,6 +71,24 @@ public class PedidoController {
             return ResponseEntity.ok(actualizado);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /* ========= DELETE ========= */
+
+    // 🗑️ Eliminar pedido
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarPedido(@PathVariable Long id) {
+        try {
+            pedidoService.eliminarPedido(id);
+            return ResponseEntity.noContent().build(); // 204
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error eliminando el pedido: " + e.getMessage());
         }
     }
 }
